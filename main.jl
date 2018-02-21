@@ -21,9 +21,8 @@ end
 
 
 
-function runn(func_num, run_num)
-    D = 30 #parse(Int, ARGS[1])
-    K = 7
+function runn(func_num, run_num, D)
+    mfes = 10000D
 
     D_g = 1
     D_h = 1
@@ -38,35 +37,51 @@ function runn(func_num, run_num)
 		    				end
 
     approx = ecaConstrained(fitnessFunc, D, D_g, D_h;
-                              η_max = 2.0,
-                                  N = 2K*D,
                              limits = [-100.0, 100.0],
                          correctSol = true,
-                        showResults = false,
+                        showResults = true,
                         termination = terminationCriteria,
-                            saveLast= "tmp/output/t2_gen_f$(func_num)_r$(run_num).csv",
-                    saveConvergence = "tmp/output/t2_converg_f$(func_num)_r$(run_num).csv",
-                          max_evals = 20000D)
+                            saveLast= "tmp/output/gen_D$(D)_f$(func_num)_r$(run_num).csv",
+                    saveConvergence = "tmp/output/converg_D$(D)_f$(func_num)_r$(run_num).csv",
+                          max_evals = mfes)
 
-    return abs(func_num*100 - approx.f)
+    err = abs(func_num*100 - approx.f)
+
+    if err < TOL
+        err = 0.0        
+    end
+
+    return err
 end
 
 function main()
     
-    nruns = 1 #NRUNS
-    a = 1  #parse(Int, ARGS[2])
-    b = 30 #parse(Int, ARGS[3])
+    nruns = 31
+    a = parse(Int, ARGS[1])
+    b = parse(Int, ARGS[2])
+    D = parse(Int, ARGS[3])
+
+    z = []
     for f = a:b
         
-        for rrr = 1:nruns
-            r = 15
-            ff = runn(f, r)
-            @printf("run = %d \t fnum = %d \t f = %e \n", r, f, ff)
+        fdata = zeros(nruns)
+
+        for r = 1:nruns
+            f_val = runn(f, r, D)
+            @printf("run = %d \t fnum = %d \t f = %e \n", r, f, f_val)
+
+            fdata[r] = f_val
         end
+
+        writecsv("tmp/info_f$(f)_D$(D).csv", fdata)
+
+        push!(z, [ minimum(fdata) mean(fdata) median(fdata) maximum(fdata) std(fdata)])
         
         println("====================================")
         # break
     end
+    
+    writecsv("tmp/summary_D$(D)_$(a)_$(b).csv", z)
 end
 
 
