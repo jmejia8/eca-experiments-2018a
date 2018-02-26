@@ -27,7 +27,7 @@ function runn(func_num, run_num, D, solver)
                     end
 
 
-    approx, f = solver(fitnessFunc, D)
+    approx, f = solver(fitnessFunc, D; saveLast="tmp/tmp.csv", saveConvergence="tmp/tmpConv.csv")
 
     if f < TOL
         f = 0.0        
@@ -50,7 +50,7 @@ function main()
         fdata = zeros(nruns)
 
         for r = 1:nruns
-            f_val = runn(f, r, D, eca)
+            f_val = runn(f, r, D, SA)
             @printf("run = %d \t fnum = %d \t f = %e \n", r, f, f_val)
 
             fdata[r] = f_val
