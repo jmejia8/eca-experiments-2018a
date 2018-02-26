@@ -20,14 +20,37 @@ function DPW(data)
 end
 
 
-function runn(func_num, run_num, D, solver)
+function runn(func_num, run_num, D, solverName)
     fval = 100func_num
     fitnessFunc(x) = begin 
                         return abs(fval - cec17_test_func(x, func_num))
                     end
 
+    if solverName == "eca"
+        solver = eca
+    elseif solverName == "GSA"
+        solver = GSA
+    elseif solverName == "SA"
+        solver = SA
+    elseif solverName == "WOA"
+        solver = WOA
+    elseif solverName == "diffEvolution"
+        solver = diffEvolution
+    else
+        return
+    end
 
-    approx, f = solver(fitnessFunc, D; saveLast="tmp/tmp.csv", saveConvergence="tmp/tmpConv.csv")
+    myPath = "tmp/$solverName"
+    if !isdir(myPath)
+        mkdir(myPath)
+    end
+
+    n1 = "$myPath/popu_D_$(D)_f$(func_num)_r$(run_num).csv"
+    n2 = "$myPath/conver_D_$(D)_f$(func_num)_r$(run_num).csv"
+    
+    approx, f = solver(fitnessFunc, D;
+                               saveLast = n1,
+                        saveConvergence = n2)
 
     if f < TOL
         f = 0.0        
@@ -39,32 +62,37 @@ end
 function main()
     
     println("Starting...")
-    nruns = 1
+    nruns = 2
     a = parse(Int, ARGS[1])
     b = parse(Int, ARGS[2])
     D = parse(Int, ARGS[3])
 
-    z = []
-    for f = a:b
-        
-        fdata = zeros(nruns)
+    # solver functions names
+    solvers = ["eca", "GSA", "SA", "WOA", "diffEvolution"]
 
-        for r = 1:nruns
-            f_val = runn(f, r, D, SA)
-            @printf("run = %d \t fnum = %d \t f = %e \n", r, f, f_val)
+    for solverName in solvers
+        z = []
+        for f = a:b
+            
+            fdata = zeros(nruns)
 
-            fdata[r] = f_val
+            for r = 1:nruns
+                f_val = runn(f, r, D, solverName)
+                @printf("run = %d \t fnum = %d \t f = %e \n", r, f, f_val)
+
+                fdata[r] = f_val
+            end
+
+            writecsv("tmp/$(solverName)_info_f$(f)_D$(D).csv", fdata)
+
+            push!(z, [ minimum(fdata) mean(fdata) median(fdata) maximum(fdata) std(fdata)])
+            
+            println("====================================")
         end
-
-        # writecsv("tmp/woa_info_f$(f)_D$(D).csv", fdata)
-
-        push!(z, [ minimum(fdata) mean(fdata) median(fdata) maximum(fdata) std(fdata)])
         
-        println("====================================")
-        # break
+        writecsv("tmp/$(solverName)_summary_D$(D)_$(a)_$(b).csv", z)
     end
-    
-    # writecsv("tmp/woa_summary_D$(D)_$(a)_$(b).csv", z)
+
     println("Done!")
 end
 
